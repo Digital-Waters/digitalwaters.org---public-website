@@ -1,33 +1,72 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin, InfoWindow, useMap } from '@vis.gl/react-google-maps';
 
 const PolygonOverlay = ({ coordinates }) => {
   const map = useMap();
+  const [zoomLevel, setZoomLevel] = useState(null); // Track zoom level
+  const polygonsRef = useRef([]); // Store polygon references
 
   useEffect(() => {
     if (map) {
-      coordinates.map((items, index) => {
-        // Append the reversed coordinates to trace back through the same points
-        const completePath = [...items, ...items.slice().reverse()];
+      // Event listener for zoom changes
+      const handleZoomChange = () => {
+        const zoom = map.getZoom();
+        setZoomLevel(zoom); // Update zoom level
+      };
 
-        const polygon = new window.google.maps.Polygon({
-          paths: completePath,
-          strokeColor: '#FF0000', // Red stroke color
-          strokeOpacity: 1.0,     // Fully opaque stroke
-          strokeWeight: 3,        // Thicker stroke weight for visibility
-          fillColor: '#FF0000',   // Red fill color
-          fillOpacity: 0.1,       // Semi-opaque fill
-        });
-  
-        polygon.setMap(map);
-        
-        return () => {
-          polygon.setMap(null);
-        };
-      });
+      // Add zoom change listener
+      const zoomListener = window.google.maps.event.addListener(map, 'zoom_changed', handleZoomChange);
+
+      // Set initial zoom level
+      setZoomLevel(map.getZoom());
+
+      // Clean up listener on unmount
+      return () => {
+        window.google.maps.event.removeListener(zoomListener);
+      };
     }
-  }, [map, coordinates]);
+  }, [map]);
+
+  useEffect(() => {
+    if (map && coordinates.length > 0 && zoomLevel !== null) {
+      // Define stroke weight based on zoom level
+      const strokeWeight = zoomLevel > 15 ? 15 : zoomLevel <= 15 && zoomLevel > 10 ? 5 : 1;
+
+      // If polygons haven't been created yet, create them and store the references
+      if (polygonsRef.current.length === 0) {
+        coordinates.forEach((items) => {
+          const completePath = [...items, ...items.slice().reverse()];
+          const polygon = new window.google.maps.Polygon({
+            paths: completePath,
+            strokeColor: '#48493F',
+            strokeOpacity: 1.0,
+            strokeWeight: strokeWeight, // Initial stroke weight
+            fillColor: '#48493F',
+            fillOpacity: 0.1,
+          });
+
+          polygon.setMap(map); // Set polygon on the map
+          polygonsRef.current.push(polygon); // Store polygon reference
+        });
+      } else {
+        // Update stroke weight of existing polygons
+        polygonsRef.current.forEach((polygon) => {
+          polygon.setOptions({ strokeWeight });
+        });
+      }
+    }
+  }, [map, coordinates, zoomLevel]); // Re-run effect only when zoomLevel changes
+
+  // Clean up polygons when component unmounts
+  useEffect(() => {
+    return () => {
+      polygonsRef.current.forEach((polygon) => {
+        polygon.setMap(null); // Remove polygon from map
+      });
+      polygonsRef.current = []; // Clear polygon references
+    };
+  }, []);
 
   return null;
 };
@@ -46,7 +85,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchPolygonData() {
       try {
-        const res = await fetch('/data/output.json'); // Adjust to match your file type
+        const res = await fetch('/data/rivers.json'); // Adjust to match your file type
         const data = await res.json(); // Or text for .js file
         setWaterBodyCoordinates(data.waterBodyCoordinates); // Ensure this contains the coordinates
       } catch (error) {
