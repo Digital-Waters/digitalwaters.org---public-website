@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 
@@ -10,29 +10,38 @@ interface Marker {
 }
 
 interface MarkerListProps {
-  markers: string[][];
+  markers: any;
   onClick: (marker: Marker) => void;
 }
 
 const MarkerMaker: React.FC<MarkerListProps> = ({ markers, onClick }) => {
+
   return (
     <>
-      {markers.map((item, index) => {
-        const latitude = parseFloat(item[2]);
-        const longitude = parseFloat(item[3]);
-        const imageUrl = item[5];
-        const time = item[4];
+    { Object.keys(markers).map((deviceID) => (
+      markers[deviceID].map((item, index) => {
+        const latitude = parseFloat(item["latitude"]);
+        const longitude = parseFloat(item["longitude"]);
+        const imageUrl = item["imageURI"];
+        const time = item["device_datetime"];
 
-        return (
-          <AdvancedMarker
-            key={index}
-            position={{ lat: latitude, lng: longitude }}
-            onClick={() => onClick({ latitude, longitude, imageUrl, time })}
-          >
-            <Pin background={"purple"} borderColor={"green"} glyphColor={"red"} scale={0.75} /> 
-          </AdvancedMarker>
-        );
-      })}
+        // Check if latitude and longitude are valid numbers
+        if (latitude !== 999 && longitude !== 999) {
+          return (
+            <AdvancedMarker
+              key={`${deviceID}-${index}`}
+              position={{ lat: latitude, lng: longitude }}
+              onClick={() => onClick({ latitude, longitude, imageUrl, time})}
+            >
+              <Pin background={"purple"} borderColor={"green"} glyphColor={"red"} scale={0.75} />
+            </AdvancedMarker>
+          );
+        } else {
+          return null;
+        }
+      })
+))}
+      
     </>
   );
 };

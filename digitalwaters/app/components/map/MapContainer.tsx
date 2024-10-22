@@ -5,6 +5,7 @@ import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import PolygonOverlay from './PolygonOverlay';
 import MarkerMaker from './MarkerMaker';
 import InfoWindowDisplay from './InfoWindowDisplay';
+import {useSearchParams} from 'next/navigation';
 
 interface DataPoint {
   latitude: number;
@@ -19,6 +20,12 @@ const MapContainer: React.FC = () => {
   const [selectedPin, setSelectedPin] = useState<DataPoint | null>(null);
   const [waterBodyCoordinates, setWaterBodyCoordinates] = useState<google.maps.LatLngLiteral[][]>([]);
   const [userData, setUserData] = useState<{ values: string[][] } | null>(null);
+  const [uniqueDevices, setUniqueDevices] = useState<string[]>(null);
+  const [colors, setColors] = useState({});
+  const searchParams = useSearchParams();
+  const dateParam = searchParams.get('date');
+  
+
 
   const handleMarkerClick = (pin: PinData) => {
     setSelectedPin(pin);
@@ -28,15 +35,18 @@ const MapContainer: React.FC = () => {
   useEffect(() => {
     async function fetchPolygonData() {
       try {
-        const res = await fetch('/data/rivers.json');
+        const res = await fetch(`http://localhost:3000/api/waterways/${uniqueDevices}`);
         const data = await res.json();
-        setWaterBodyCoordinates(data.waterBodyCoordinates);
+        console.log("coordinates: ", data);
+        setWaterBodyCoordinates(data);
       } catch (error) {
         console.error("Error loading polygon data:", error);
       }
     }
-    fetchPolygonData();
-  }, []);
+    if (uniqueDevices){
+      fetchPolygonData();
+    }
+  }, [uniqueDevices]);
 
   useEffect(() => {
     async function fetchData() {
@@ -45,14 +55,89 @@ const MapContainer: React.FC = () => {
         if (!res.ok) {
           throw new Error('Network response was not ok');
         }
-        const data = await res.json();
-        setUserData(data);
+        const data = await res.json(); 
+        const organizedData = data.reduce((acc, item) => {
+          const { deviceID } = item;
+          if (!acc[deviceID]) {
+            acc[deviceID] = [];
+          }
+          acc[deviceID].push(item);
+          return acc;
+        }, {});
+        
+  
+        setUserData(organizedData); // Save organized data
       } catch (error) {
         console.error("Error fetching data:", error);
-      }
+      } 
     }
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (userData) {
+      const unique = Array.from(new Set(Object.keys(userData)));
+      setUniqueDevices(unique);
+    }
+  }, [userData]);
+
+  function isValidColor(colorString) {
+    try {
+      // Convert the string into an object
+      const colorObject = JSON.parse(colorString.replace(/'/g, '"'));
+  
+      // Check if all required keys are present and valid numbers
+      return ['r', 'g', 'b', 'a'].every(key => key in colorObject && !isNaN(colorObject[key]));
+    } catch (error) {
+      // If parsing fails, the color is invalid
+      return false;
+    }
+  }
+  
+
+  useEffect(() => {
+    if (dateParam && userData) {
+        Object.keys(userData).map((deviceID) => {
+          let found = false;
+          //console.log("loop: ", userData[deviceID]);
+            for (let i = userData[deviceID].length - 1; i >= 0; i--) {
+                const deviceData = userData[deviceID][i];
+                const deviceDate = deviceData["device_datetime"].split('T')[0];
+                console.log(`deviceDate: ${deviceDate}, dateParam: ${dateParam}`);
+                // Check if the device date is less than or equal to the dateParam
+                if (deviceDate <= dateParam) {
+                    const waterColor = deviceData["waterColor"];
+
+                    //console.log( `${deviceData["deviceID"]} :  ${waterColor} at ${deviceDate}`);
+                    //console.log("Date: ", dateParam);
+
+                    // Only set color if waterColor is valid
+                    if (isValidColor(waterColor)) {
+                      setColors(prevState => ({
+                        ...prevState,
+                        [deviceData["deviceID"]]: waterColor // Update or add the specific key-value pair
+                      }));
+                      console.log("valid");
+                      found = true;
+                      break;
+                    }
+                }
+            }
+
+            // If no valid color found, set to a default value
+            if (!found) {
+              setColors(prevState => ({
+                ...prevState,
+                [userData[deviceID][0]["deviceID"]]:  "{'r': 0, 'g': 0, 'b': 0, 'a': 20}" // Default color
+              }));
+            }
+            if (colors) {
+                console.log("colors: ", colors);
+            }
+        });
+    }
+}, [dateParam, userData]);
+
 
   return (
     <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string}>
@@ -69,14 +154,14 @@ const MapContainer: React.FC = () => {
           }}
         >
           {userData && (
-            <MarkerMaker markers={userData.values} onClick={handleMarkerClick} />
+            <MarkerMaker markers={userData} onClick={handleMarkerClick} />
           )}
           <InfoWindowDisplay
             selectedPin={selectedPin}
             open={open}
             onClose={() => setOpen(false)}
           />
-          <PolygonOverlay coordinates={waterBodyCoordinates} />
+          <PolygonOverlay coordinates={waterBodyCoordinates} colors={colors}/>
         </Map>
       </div>
     </APIProvider>
