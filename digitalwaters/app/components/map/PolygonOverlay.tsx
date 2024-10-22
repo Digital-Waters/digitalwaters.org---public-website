@@ -40,7 +40,8 @@ const PolygonOverlay: React.FC<PolygonOverlayProps> = ({ coordinates, colors }) 
       // Draw the polygons with the updated colors
       coordinates.forEach((items) => {
         const completePath = [...items.geometry, ...items.geometry.slice().reverse()];
-  
+        
+        //if(items.deviceID in )
         let colorData = colors[items.deviceID];
   
         // Convert the color data string to an object if it's a string
@@ -55,12 +56,9 @@ const PolygonOverlay: React.FC<PolygonOverlayProps> = ({ coordinates, colors }) 
         }
   
         // Check if the color is a valid object
-        if (typeof colorData === 'object' && 'r' in colorData && 'g' in colorData && 'b' in colorData && 'a' in colorData) {
+        if (typeof colorData === 'object' && 'r' in colorData && 'g' in colorData && 'b' in colorData && 'a' in colorData && items.deviceID in colors) {
           const color = rgba2hex(colorData); // Convert color object to hex
-          console.log("Polygon Color:", color);
   
-          // Log the path to ensure it's valid
-          console.log("Polygon Path:", completePath);
   
           const polygon = new window.google.maps.Polygon({
             paths: completePath,
@@ -71,17 +69,12 @@ const PolygonOverlay: React.FC<PolygonOverlayProps> = ({ coordinates, colors }) 
             fillOpacity: 1.0,
           });
   
-          // Log polygon data for debugging
-          console.log("Polygon object:", polygon);
   
           polygon.setMap(map);
           polygonsRef.current.push(polygon);
-  
-          // Check if the polygon was drawn correctly
-          console.log("Polygon Paths after set:", polygon.getPaths());
-        } else {
-          console.error("Invalid color data for deviceID:", items.deviceID);
-        }
+      } else {
+          null; 
+       }
       });
     }
   }, [map, coordinates, zoomLevel, colors]);

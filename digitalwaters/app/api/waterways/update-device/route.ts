@@ -90,14 +90,6 @@ export async function PUT(request: Request) {
   }
 }
 
-function parseWKT(wkt: string) {
-  const coordsString = wkt.replace(/POINT\(|\)/g, '');
-  const [lng, lat] = coordsString.split(' ').map(Number);
-  return [lng, lat];
-}
-
-
-
 function getAlphaForLongitude(meters: number, latitude: number): number {
   const metersPerDegreeLat = 111000; // Approximate meters per degree of latitude
   

@@ -37,7 +37,6 @@ const MapContainer: React.FC = () => {
       try {
         const res = await fetch(`http://localhost:3000/api/waterways/${uniqueDevices}`);
         const data = await res.json();
-        console.log("coordinates: ", data);
         setWaterBodyCoordinates(data);
       } catch (error) {
         console.error("Error loading polygon data:", error);
@@ -99,41 +98,24 @@ const MapContainer: React.FC = () => {
     if (dateParam && userData) {
         Object.keys(userData).map((deviceID) => {
           let found = false;
-          //console.log("loop: ", userData[deviceID]);
             for (let i = userData[deviceID].length - 1; i >= 0; i--) {
                 const deviceData = userData[deviceID][i];
                 const deviceDate = deviceData["device_datetime"].split('T')[0];
-                console.log(`deviceDate: ${deviceDate}, dateParam: ${dateParam}`);
                 // Check if the device date is less than or equal to the dateParam
                 if (deviceDate <= dateParam) {
                     const waterColor = deviceData["waterColor"];
-
-                    //console.log( `${deviceData["deviceID"]} :  ${waterColor} at ${deviceDate}`);
-                    //console.log("Date: ", dateParam);
-
-                    // Only set color if waterColor is valid
                     if (isValidColor(waterColor)) {
                       setColors(prevState => ({
                         ...prevState,
                         [deviceData["deviceID"]]: waterColor // Update or add the specific key-value pair
                       }));
-                      console.log("valid");
                       found = true;
                       break;
                     }
                 }
             }
 
-            // If no valid color found, set to a default value
-            if (!found) {
-              setColors(prevState => ({
-                ...prevState,
-                [userData[deviceID][0]["deviceID"]]:  "{'r': 0, 'g': 0, 'b': 0, 'a': 20}" // Default color
-              }));
-            }
-            if (colors) {
-                console.log("colors: ", colors);
-            }
+          
         });
     }
 }, [dateParam, userData]);
