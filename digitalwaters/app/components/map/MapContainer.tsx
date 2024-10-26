@@ -35,8 +35,9 @@ const MapContainer: React.FC = () => {
   useEffect(() => {
     async function fetchPolygonData() {
       try {
-        const res = await fetch(`http://localhost:3000/api/waterways/${uniqueDevices}`);
+        const res = await fetch(`https://water-watch-58265eebffd9.herokuapp.com/getwaterdevice/`);
         const data = await res.json();
+        console.log(data);
         setWaterBodyCoordinates(data);
       } catch (error) {
         console.error("Error loading polygon data:", error);
@@ -50,11 +51,16 @@ const MapContainer: React.FC = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch('/data/data.json');
+        console.log('Starting fetch operation...');
+  
+        const res = await fetch('https://water-watch-58265eebffd9.herokuapp.com/getwaterdata/?max_temperature=14');
         if (!res.ok) {
           throw new Error('Network response was not ok');
         }
+  
         const data = await res.json(); 
+        console.log('Data received:', data); // Log the data for visibility
+  
         const organizedData = data.reduce((acc, item) => {
           const { deviceID } = item;
           if (!acc[deviceID]) {
@@ -63,15 +69,17 @@ const MapContainer: React.FC = () => {
           acc[deviceID].push(item);
           return acc;
         }, {});
+        console.log("organized Data: ", organizedData);
         
-  
-        setUserData(organizedData); // Save organized data
+        setUserData(organizedData); // Save organized data        
       } catch (error) {
         console.error("Error fetching data:", error);
-      } 
+      }
     }
+  
     fetchData();
   }, []);
+  
 
   useEffect(() => {
     if (userData) {
@@ -96,34 +104,46 @@ const MapContainer: React.FC = () => {
 
   useEffect(() => {
     if (dateParam && userData) {
-        Object.keys(userData).map((deviceID) => {
-          let found = false;
-            for (let i = userData[deviceID].length - 1; i >= 0; i--) {
-                const deviceData = userData[deviceID][i];
-                const deviceDate = deviceData["device_datetime"].split('T')[0];
-                // Check if the device date is less than or equal to the dateParam
-                if (deviceDate <= dateParam) {
-                    const waterColor = deviceData["waterColor"];
-                    if (isValidColor(waterColor)) {
-                      setColors(prevState => ({
-                        ...prevState,
-                        [deviceData["deviceID"]]: waterColor // Update or add the specific key-value pair
-                      }));
-                      found = true;
-                      break;
-                    }
-                }
-            }
+      const updatedColors = {}; // Create a new object to batch updates
+  
+      Object.keys(userData).forEach((deviceID) => {
+        const deviceEntries = userData[deviceID];
+  
+        // Check if dateParam is less than the date of the last element in the array
+        const lastDeviceDate = deviceEntries[deviceEntries.length - 1]["device_datetime"].split('T')[0];
+        if (dateParam < lastDeviceDate) {
+          updatedColors[deviceID] = "{'r': 0, 'g': 0, 'b': 0, 'a': 0}";
+          return;
+        }
+        const latestDeviceDate = deviceEntries[0]["device_datetime"].split('T')[0];
 
-          
+        if (dateParam >= latestDeviceDate){
+          updatedColors[deviceID] = deviceEntries[0]["waterColor"]
+          return;
+        }
+  
+        // Find the first valid entry with a device date <= dateParam
+        const validEntry = deviceEntries.find((deviceData) => {
+          const deviceDate = deviceData["device_datetime"].split('T')[0];
+          return deviceDate <= dateParam && isValidColor(deviceData["waterColor"]);
         });
+  
+        if (validEntry) {
+          updatedColors[deviceID] = validEntry["waterColor"];
+        } else {
+          // If no valid entry found, set color to 'rgba(0, 0, 0, 0)' as a fallback
+          updatedColors[deviceID] = "{'r': 0, 'g': 0, 'b': 0, 'a': 0}";
+        }
+      });
+      console.log(updatedColors);
+      setColors((prevState) => ({ ...prevState, ...updatedColors })); // Update state in one go
     }
-}, [dateParam, userData]);
-
-
+  }, [dateParam, userData]);
+  
+  
   return (
     <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string}>
-      <div className="h-4/5 w-4/6 rounded-lg overflow-hidden">
+      <div className="h-4/5 w-4/6 rounded-lg overflow-hidden pb-8">
         <Map
           defaultCenter={position}
           defaultZoom={12}

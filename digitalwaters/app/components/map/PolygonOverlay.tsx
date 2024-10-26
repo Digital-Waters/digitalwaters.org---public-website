@@ -39,8 +39,23 @@ const PolygonOverlay: React.FC<PolygonOverlayProps> = ({ coordinates, colors }) 
   
       // Draw the polygons with the updated colors
       coordinates.forEach((items) => {
-        const completePath = [...items.geometry, ...items.geometry.slice().reverse()];
-        
+        let coordsArray;
+
+        // Validate and parse nearbyGeoCoords
+        try {
+          coordsArray = JSON.parse(items.nearbyGeoCoords);
+        } catch (error) {
+          console.error("Error parsing nearbyGeoCoords:", items.nearbyGeoCoords, error);
+          return; // Skip if parsing fails 
+        }
+
+        const completePath = [...coordsArray.map(coord => ({
+          lat: coord.lat,
+          lng: coord.lng,
+        })), ...coordsArray.slice().reverse().map(coord => ({
+          lat: coord.lat,
+          lng: coord.lng,
+        }))];
         //if(items.deviceID in )
         let colorData = colors[items.deviceID];
   
