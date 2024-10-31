@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { Slider } from "@nextui-org/slider";
@@ -7,17 +7,23 @@ import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@
 
 const generateDateRange = (startDate: Date, endDate: Date) => {
   const dates = [];
-  let currentDate = startDate;
+  let lastDate = endDate;
 
-  while (currentDate >= endDate) {
-    dates.push(new Date(currentDate));
-    currentDate.setDate(currentDate.getDate() - 1);
+  while (lastDate <= startDate) {
+    dates.push(new Date(lastDate));
+    lastDate.setDate(lastDate.getDate() + 1);
   }
 
   return dates;
 };
 
 const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+const formatTime = (value: number) => {
+  const hours = Math.floor(value);
+  const minutes = Math.round((value - hours) * 60);
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+};
 
 export default function DateSlider() {
   const router = useRouter();
@@ -29,24 +35,30 @@ export default function DateSlider() {
   
   const dateRange = generateDateRange(today, sept1Date);
   const [selectedDate, setSelectedDate] = useState<string>(searchParams.get("date") || formatDate(today));
-  const [timeValue, setTimeValue] = useState<number>(0); // Set slider to start at 00:00
+  const [timeValue, setTimeValue] = useState<number>(0); // Slider starts at 00:00
   
+  const step = 1/6; // 5-minute increments
+
   useEffect(() => {
     const urlDate = searchParams.get("date") || formatDate(today);
-    router.push(`?date=${urlDate}`, undefined, { shallow: true });
+    const urlTime = searchParams.get("time") || "00:00";
+    router.push(`?date=${urlDate}&time=${urlTime}`, undefined, { shallow: true });
     setSelectedDate(urlDate);
+    setTimeValue(parseFloat(urlTime.replace(':', '.')));
   }, []);
 
   // Handle dropdown date change
   const handleDateChange = (date: string) => {
     setSelectedDate(date);
     setTimeValue(0); // Reset time slider to 00:00
-    router.push(`?date=${date}`, undefined, { shallow: true });
+    router.push(`?date=${date}&time=00:00`, undefined, { shallow: true });
   };
 
   // Handle time slider change
   const handleTimeChange = (value: number) => {
     setTimeValue(value);
+    const timeString = formatTime(value);
+    router.push(`?date=${selectedDate}&time=${timeString}`, undefined, { shallow: true });
   };
 
   return (
@@ -84,11 +96,11 @@ export default function DateSlider() {
       </div>
 
       <div className="flex justify-center">
-        <h4>{`Time: ${timeValue}:00`}</h4>
+        <h4>{`Time: ${formatTime(timeValue)}`}</h4>
         <Slider
           min={0}    // Represents 00:00 hours
-          max={24}   // Represents 24:00 hours
-          step={1}   // 1-hour increments
+          maxValue={24}   // Represents 24:00 hours
+          step={step}   // 5-minute increments
           value={timeValue}
           onChange={handleTimeChange}
           aria-label="24-Hour Time Slider"

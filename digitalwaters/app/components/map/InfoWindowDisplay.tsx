@@ -26,7 +26,7 @@ const InfoWindowDisplay: React.FC<InfoWindowDisplayProps> = ({ selectedPin, open
     >
       <div className="flex flex-col items-center h-full w-full">
         <div className="w-full">
-          <p className="text-lg text-center">Time: {selectedPin.time}</p>
+          <p className="text-lg text-center text-black">Time: {selectedPin.time}</p>
         </div>
         <img
           src={selectedPin.imageUrl}

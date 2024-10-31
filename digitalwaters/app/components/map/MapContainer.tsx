@@ -20,10 +20,12 @@ const MapContainer: React.FC = () => {
   const [selectedPin, setSelectedPin] = useState<DataPoint | null>(null);
   const [waterBodyCoordinates, setWaterBodyCoordinates] = useState<google.maps.LatLngLiteral[][]>([]);
   const [userData, setUserData] = useState<{ values: string[][] } | null>(null);
-  const [uniqueDevices, setUniqueDevices] = useState<string[]>(null);
+  const [uniqueDevices, setUniqueDevices] = useState<string[]>([]);
   const [colors, setColors] = useState({});
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
+  const timeParam = searchParams.get('time');
+
   
 
 
@@ -37,7 +39,7 @@ const MapContainer: React.FC = () => {
       try {
         const res = await fetch(`https://water-watch-58265eebffd9.herokuapp.com/getwaterdevice/`);
         const data = await res.json();
-        console.log(data);
+        console.log("polygon: ", data);
         setWaterBodyCoordinates(data);
       } catch (error) {
         console.error("Error loading polygon data:", error);
@@ -50,10 +52,10 @@ const MapContainer: React.FC = () => {
 
   useEffect(() => {
     async function fetchData() {
+      if (!dateParam) return;
       try {
         console.log('Starting fetch operation...');
-  
-        const res = await fetch('https://water-watch-58265eebffd9.herokuapp.com/getwaterdata/?max_temperature=14');
+        const res = await fetch(`https://water-watch-58265eebffd9.herokuapp.com/getwaterdata/?only_underwater=25&begin_datetime=${dateParam+'T00:00:00-05:00'}&end_datetime=${dateParam+'T23:59:59-05:00'}`);
         if (!res.ok) {
           throw new Error('Network response was not ok');
         }
@@ -78,7 +80,7 @@ const MapContainer: React.FC = () => {
     }
   
     fetchData();
-  }, []);
+  }, [dateParam]);
   
 
   useEffect(() => {
@@ -100,45 +102,37 @@ const MapContainer: React.FC = () => {
       return false;
     }
   }
-  
-
   useEffect(() => {
-    if (dateParam && userData) {
-      const updatedColors = {}; // Create a new object to batch updates
+    if (dateParam && timeParam && userData) {
+      const updatedColors = {};
+  
+      const targetTime = new Date(`${dateParam}T${timeParam}`);
+      const startTime = new Date(targetTime.getTime() - 10 * 60 * 1000); // 10 minutes before
   
       Object.keys(userData).forEach((deviceID) => {
         const deviceEntries = userData[deviceID];
   
-        // Check if dateParam is less than the date of the last element in the array
-        const lastDeviceDate = deviceEntries[deviceEntries.length - 1]["device_datetime"].split('T')[0];
-        if (dateParam < lastDeviceDate) {
-          updatedColors[deviceID] = "{'r': 0, 'g': 0, 'b': 0, 'a': 0}";
-          return;
-        }
-        const latestDeviceDate = deviceEntries[0]["device_datetime"].split('T')[0];
-
-        if (dateParam >= latestDeviceDate){
-          updatedColors[deviceID] = deviceEntries[0]["waterColor"]
-          return;
-        }
-  
-        // Find the first valid entry with a device date <= dateParam
-        const validEntry = deviceEntries.find((deviceData) => {
-          const deviceDate = deviceData["device_datetime"].split('T')[0];
-          return deviceDate <= dateParam && isValidColor(deviceData["waterColor"]);
+        // Find the first entry within the 10-minute window (closest due to descending order)
+        const closestEntry = deviceEntries.find((entry) => {
+          const entryTime = new Date(entry.device_datetime);
+          return entryTime >= startTime && entryTime <= targetTime && isValidColor(entry.waterColor);
         });
   
-        if (validEntry) {
-          updatedColors[deviceID] = validEntry["waterColor"];
+        if (closestEntry) {
+          console.log("Closest device dateTime:", closestEntry.device_datetime);
+          updatedColors[deviceID] = closestEntry.waterColor;
         } else {
-          // If no valid entry found, set color to 'rgba(0, 0, 0, 0)' as a fallback
+          // Fallback color if no valid entry is found
           updatedColors[deviceID] = "{'r': 0, 'g': 0, 'b': 0, 'a': 0}";
         }
       });
+  
       console.log(updatedColors);
-      setColors((prevState) => ({ ...prevState, ...updatedColors })); // Update state in one go
+      setColors((prevState) => ({ ...prevState, ...updatedColors }));
     }
-  }, [dateParam, userData]);
+  }, [dateParam, timeParam, userData]);
+  
+  
   
   
   return (
