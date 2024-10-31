@@ -37,7 +37,7 @@ export default function DateSlider() {
   const [selectedDate, setSelectedDate] = useState<string>(searchParams.get("date") || formatDate(today));
   const [timeValue, setTimeValue] = useState<number>(0); // Slider starts at 00:00
   
-  const step = 1/6; // 5-minute increments
+  const step = 1/6; 
 
   useEffect(() => {
     const urlDate = searchParams.get("date") || formatDate(today);
@@ -65,16 +65,16 @@ export default function DateSlider() {
     <div className="w-full">
       <h3 className="flex justify-center text-slate-300">Select Date and Time:</h3>
       
-      <div className="flex justify-center py-4">
+      <div className="flex justify-center py-2">
         <Dropdown>
           <DropdownTrigger>
-            <Button color="primary" variant="shadow" className="capitalize w-20 h-8">
+            <Button color="primary" variant="faded" className="capitalize w-24 h-8 font-bold">
               {selectedDate}
             </Button>
           </DropdownTrigger>
           <DropdownMenu
             aria-label="Date Selection"
-            color="primary"
+            color="warning"
             variant="flat"
             selectionMode="single"
             selectedKeys={new Set([selectedDate])}
@@ -96,7 +96,6 @@ export default function DateSlider() {
       </div>
 
       <div className="flex justify-center">
-        <h4>{`Time: ${formatTime(timeValue)}`}</h4>
         <Slider
           min={0}    // Represents 00:00 hours
           maxValue={24}   // Represents 24:00 hours
@@ -104,11 +103,8 @@ export default function DateSlider() {
           value={timeValue}
           onChange={handleTimeChange}
           aria-label="24-Hour Time Slider"
-          classNames={{
-            base: "gap-3",
-            track: "border-s-secondary-100",
-            filler: "bg-gradient-to-r from-success-100 to-success-500",
-          }}
+          label="Time" 
+          color="primary"
         />
       </div>
     </div>

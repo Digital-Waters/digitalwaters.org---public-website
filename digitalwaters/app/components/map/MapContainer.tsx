@@ -37,7 +37,7 @@ const MapContainer: React.FC = () => {
   useEffect(() => {
     async function fetchPolygonData() {
       try {
-        const res = await fetch(`https://water-watch-58265eebffd9.herokuapp.com/getwaterdevice/`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_WATER_DEVICE_URL}`);
         const data = await res.json();
         console.log("polygon: ", data);
         setWaterBodyCoordinates(data);
@@ -55,7 +55,7 @@ const MapContainer: React.FC = () => {
       if (!dateParam) return;
       try {
         console.log('Starting fetch operation...');
-        const res = await fetch(`https://water-watch-58265eebffd9.herokuapp.com/getwaterdata/?only_underwater=25&begin_datetime=${dateParam+'T00:00:00-05:00'}&end_datetime=${dateParam+'T23:59:59-05:00'}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_WATER_DATA_URL}?only_underwater=25&begin_datetime=${dateParam+'T00:00:00-05:00'}&end_datetime=${dateParam+'T23:59:59-05:00'}`);
         if (!res.ok) {
           throw new Error('Network response was not ok');
         }

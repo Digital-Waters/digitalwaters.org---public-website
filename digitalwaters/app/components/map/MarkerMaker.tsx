@@ -33,7 +33,7 @@ const MarkerMaker: React.FC<MarkerListProps> = ({ markers, onClick }) => {
               position={{ lat: latitude, lng: longitude }}
               onClick={() => onClick({ latitude, longitude, imageUrl, time})}
             >
-              <Pin background={"purple"} borderColor={"green"} glyphColor={"red"} scale={0.75} />
+              <Pin background={"blue"} borderColor={"green"} glyphColor={"green"} scale={0.4} />
             </AdvancedMarker>
           );
         } else {
