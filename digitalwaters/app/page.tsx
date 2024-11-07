@@ -1,7 +1,8 @@
 "use client"
 
 import MapContainer from '../app/components/map/MapContainer';
-import Slider from '../app/components/map/Slider'
+import Slider from '../app/components/map/Slider';
+//import LeafletMap from '../app/components/map/LeafletMap'
 
 
 const Home: React.FC = () => {
@@ -11,6 +12,7 @@ const Home: React.FC = () => {
           <Slider />
         </div>
           <MapContainer />
+          {/*<LeafletMap/>*/}
       </div>
   );
 };
