@@ -2,10 +2,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Polygon, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import L, { Icon } from "leaflet";
-import LeafletPolygonOverlay from '../map/PolygonOverlay'
+import  { Icon, LatLngExpression  } from "leaflet";
+import LeafletPolygonOverlay from './PolygonOverlay'
 
 // Use relative paths to the public folder for images
 const markerIcon = "/assets/pin.png";
@@ -19,7 +19,7 @@ const DefaultIcon = new Icon({
 });
 
 function LeafletMapContainer() {
-  const position = [43.687104, -79.39095966666666];
+  const position: LatLngExpression = [43.687104, -79.39095966666666]; // Type the position correctly
   const [waterBodyCoordinates, setWaterBodyCoordinates] = useState([]);
   const [userData, setUserData] = useState(null);
   const [uniqueDevices, setUniqueDevices] = useState([]);
@@ -107,18 +107,9 @@ function LeafletMapContainer() {
       return ["r", "g", "b", "a"].every(
         (key) => key in colorObject && !isNaN(colorObject[key])
       );
-    } catch (error) {
+    } catch  {
       return false;
     }
-  }
-
-  function rgba2hex(color) {
-    const toHex = (value) => Math.round(value).toString(16).padStart(2, '0');
-    const redHex = toHex(color.r);
-    const greenHex = toHex(color.g);
-    const blueHex = toHex(color.b);
-    const alphaHex = toHex((color.a / 100) * 255);
-    return `#${redHex}${greenHex}${blueHex}${alphaHex}`;
   }
 
   return (

@@ -22,4 +22,4 @@ function LeafletMap() {
   );
 }
 
-export default LeafletMap;
+export default  LeafletMap;

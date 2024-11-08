@@ -1,6 +1,7 @@
-"use client"
+"use client";
 
 import { InfoWindow } from '@vis.gl/react-google-maps';
+import Image from 'next/image';
 
 interface SelectedPin {
   latitude: number;
@@ -22,13 +23,12 @@ const InfoWindowDisplay: React.FC<InfoWindowDisplayProps> = ({ selectedPin, open
     <InfoWindow
       position={{ lat: selectedPin.latitude, lng: selectedPin.longitude }}
       onClose={onClose}
-      scale={0.75}
     >
       <div className="flex flex-col items-center h-full w-full">
         <div className="w-full">
           <p className="text-lg text-center text-black">Time: {selectedPin.time}</p>
         </div>
-        <img
+        <Image
           src={selectedPin.imageUrl}
           alt="Weather related"
           className="w-40 max-w-xs object-contain mt-2"

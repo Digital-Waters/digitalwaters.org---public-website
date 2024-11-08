@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import MapContainer from '../app/components/map/MapContainer';
-import Slider from '../app/components/map/Slider';
-//import LeafletMap from '../app/components/map/LeafletMap'
+import dynamic from 'next/dynamic';
 
+// Dynamically import components without SSR
+const LeafletMapContainer = dynamic(() => import('./LeafletMapContainer'), { ssr: false });
+const Slider = dynamic(() => import('./Slider'), { ssr: false });
 
 const Home: React.FC = () => {
   return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#15171a] flex-col">
-        <div className=" py-5 w-2/3">
-          <Slider />
-        </div>
-          <MapContainer />
-          {/*<LeafletMap/>*/}
+    <div className="h-screen w-full flex items-center justify-center bg-[#15171a] flex-col">
+      <div className="py-5 w-2/3">
+        <Slider />
       </div>
+      <LeafletMapContainer />
+    </div>
   );
 };
 

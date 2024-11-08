@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useRef, useState } from "react";
 import { useMap } from "react-leaflet";
 import { Polygon } from "leaflet";
@@ -37,7 +39,7 @@ const LeafletPolygonOverlay = ({ coordinates, colors }) => {
         // Validate and parse nearbyGeoCoords
         try {
           coordsArray = JSON.parse(item.nearbyGeoCoords);
-        } catch (error) {
+        } catch  {
           return; // Skip if parsing fails
         }
 

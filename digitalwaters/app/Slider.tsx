@@ -7,7 +7,7 @@ import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@
 
 const generateDateRange = (startDate: Date, endDate: Date) => {
   const dates = [];
-  let lastDate = endDate;
+  const lastDate = endDate;
 
   while (lastDate <= startDate) {
     dates.push(new Date(lastDate));
@@ -30,10 +30,9 @@ export default function DateSlider() {
   const searchParams = useSearchParams();
 
   const today = new Date();
-  const startDate = new Date("2024-01-01");
-  const sept1Date = new Date("2024-10-20");
+  const startDate = new Date("2024-10-20");
   
-  const dateRange = generateDateRange(today, sept1Date);
+  const dateRange = generateDateRange(today, startDate);
   const [selectedDate, setSelectedDate] = useState<string>(searchParams.get("date") || formatDate(today));
   const [timeValue, setTimeValue] = useState<number>(0); // Slider starts at 00:00
   
