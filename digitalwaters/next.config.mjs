@@ -8,7 +8,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   output: 'export', // Ensures a static export
-
+  //distDir: 'build',
   //async rewrites() {
     //return [
       //{

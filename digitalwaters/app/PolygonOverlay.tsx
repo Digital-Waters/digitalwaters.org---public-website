@@ -2,54 +2,61 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMap } from "react-leaflet";
-import { Polygon } from "leaflet";
+import L from "leaflet";
+import { useSelector } from "react-redux";
+import { RootState } from "../lib/store.ts";
 
-const LeafletPolygonOverlay = ({ coordinates, colors }) => {
+const LeafletPolygonOverlay = () => {
   const map = useMap();
-  const [zoomLevel, setZoomLevel] = useState(null);
-  const polygonsRef = useRef([]);
+  const [zoomLevel, setZoomLevel] = useState<number | null>(null);
+  const polylinesRef = useRef<Record<string, L.Polyline>>({});
+  const currentData = useSelector(
+    (state: RootState) => state.waterData.currentData
+  );
+  const coordinates = useSelector(
+    (state: RootState) => state.waterData.waterBodyCoordinates
+  );
 
+  // Handle map zoom level changes
   useEffect(() => {
     if (map) {
       const handleZoomChange = () => setZoomLevel(map.getZoom());
-
       map.on("zoomend", handleZoomChange);
       setZoomLevel(map.getZoom());
-  
+
       return () => {
         map.off("zoomend", handleZoomChange);
       };
     }
   }, [map]);
 
+  // Draw polylines on the map based on updated data
   useEffect(() => {
-    if (map && coordinates.length > 0 && zoomLevel !== null) {
-      const strokeWeight = zoomLevel > 15 ? 10 : zoomLevel <= 15 && zoomLevel > 10 ? 5 : 1;
+    if (map && coordinates.length > 0 && zoomLevel !== null && currentData) {
+      const strokeWeight =
+        zoomLevel > 15 ? 10 : zoomLevel <= 15 && zoomLevel > 10 ? 5 : 1;
 
-      // Clear previous polygons
-      polygonsRef.current.forEach((polygon) => {
-        map.removeLayer(polygon);
+      // Clear existing polylines
+      Object.values(polylinesRef.current).forEach((line) => {
+        line.remove();
       });
-      polygonsRef.current = [];
+      polylinesRef.current = {};
 
-      coordinates.forEach((item) => {
+      coordinates.forEach((item, index) => {
         let coordsArray;
-        console.log("zoom: ", map.getZoom());
-        console.log("stroke: ", strokeWeight);
-        // Validate and parse nearbyGeoCoords
         try {
           coordsArray = JSON.parse(item.nearbyGeoCoords);
-        } catch  {
+        } catch {
           return; // Skip if parsing fails
         }
 
-        const completePath = [
-          ...coordsArray.map(coord => [coord.lat, coord.lng]), 
-          ...coordsArray.slice().reverse().map(coord => [coord.lat, coord.lng])
-        ];
-        let colorData = colors[item.deviceID];
+        const polylineKey = `${item.deviceID}-${index}`;
 
-        // Convert color data to an object if it's a string
+        // Check if current data exists for this device
+        if (!currentData[item.deviceID]) return;
+
+        // Parse color data from currentData
+        let colorData = currentData[item.deviceID]?.waterColor;
         if (typeof colorData === "string") {
           try {
             const formattedColorData = colorData.replace(/'/g, '"').trim();
@@ -60,35 +67,51 @@ const LeafletPolygonOverlay = ({ coordinates, colors }) => {
           }
         }
 
-        // Check if color is valid and create the polygon
-        if (colorData && typeof colorData === "object" && "r" in colorData && "g" in colorData && "b" in colorData && "a" in colorData) {
-          const color = rgba2hex(colorData);
+        // Convert RGBA to hex color
+        const color =
+          colorData &&
+          typeof colorData === "object" &&
+          "r" in colorData &&
+          "g" in colorData &&
+          "b" in colorData &&
+          "a" in colorData
+            ? rgba2hex(colorData)
+            : "#000000";
 
-          const polygon = new Polygon(completePath, {
-            color,
-            weight: strokeWeight,
-            fillColor: color,
-            fillOpacity: 0.4,
-          });
+        const latLngs = coordsArray.map((coord: { lat: number; lng: number }) => [
+          coord.lat,
+          coord.lng,
+        ]);
 
-          polygon.addTo(map);
-          polygonsRef.current.push(polygon);
-        }
+
+        // Create and add the polyline using L.polyline
+        const line = L.polyline(latLngs, {
+          color,
+          weight: strokeWeight,
+          fillOpacity: 0.4,
+        }).addTo(map);
+
+        // Store reference to the polyline
+        polylinesRef.current[polylineKey] = line;
       });
-    }
-  }, [map, coordinates, zoomLevel, colors]);
 
+    }
+  }, [map, coordinates, zoomLevel, currentData]); // Added `currentData` to dependencies
+
+  // Cleanup on component unmount
   useEffect(() => {
     return () => {
-      polygonsRef.current.forEach((polygon) => {
-        map.removeLayer(polygon);
+      Object.values(polylinesRef.current).forEach((line) => {
+        line.remove();
       });
-      polygonsRef.current = [];
+      polylinesRef.current = {};
     };
-  }, [map]);
+  }, []);
 
-  function rgba2hex(color) {
-    const toHex = (value) => Math.round(value).toString(16).padStart(2, "0");
+  // Convert RGBA color to hex format
+  function rgba2hex(color: { r: number; g: number; b: number; a: number }) {
+    const toHex = (value: number) =>
+      Math.round(value).toString(16).padStart(2, "0");
     const redHex = toHex(color.r);
     const greenHex = toHex(color.g);
     const blueHex = toHex(color.b);

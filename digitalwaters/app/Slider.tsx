@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Slider } from "@nextui-org/slider";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@nextui-org/react";
+import { useSelector } from "react-redux";
+import { RootState } from "../lib/store.ts";
 
 const generateDateRange = (startDate: Date, endDate: Date) => {
   const dates = [];
@@ -26,6 +28,15 @@ const formatTime = (value: number) => {
 };
 
 export default function DateSlider() {
+
+  const dateLimit = useSelector((state: RootState) => state.waterData.dateLimit);
+  console.log(typeof dateLimit[0]);
+  const leftBig = "<<";
+  const leftSmall = "<";
+  const rightBig = ">>";
+  const rightSmall = ">";
+
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -49,7 +60,6 @@ export default function DateSlider() {
   // Handle dropdown date change
   const handleDateChange = (date: string) => {
     setSelectedDate(date);
-    setTimeValue(0); // Reset time slider to 00:00
     router.push(`?date=${date}&time=00:00`, undefined, { shallow: true });
   };
 
@@ -65,9 +75,12 @@ export default function DateSlider() {
       <h3 className="flex justify-center text-slate-300">Select Date and Time:</h3>
       
       <div className="flex justify-center py-2">
+        <Button color="primary" variant="faded" className="capitalize w-8 h-8 font-bold mx-2"> {leftBig} </Button>
+        <Button color="primary" variant="faded" className="capitalize w-8 h-8 font-bold mx-2"> {leftSmall} </Button>
+
         <Dropdown>
           <DropdownTrigger>
-            <Button color="primary" variant="faded" className="capitalize w-24 h-8 font-bold">
+            <Button color="primary" variant="faded" className="capitalize w-24 h-8 font-bold mx-2">
               {selectedDate}
             </Button>
           </DropdownTrigger>
@@ -92,6 +105,9 @@ export default function DateSlider() {
             )}
           </DropdownMenu>
         </Dropdown>
+        
+        <Button color="primary" variant="faded" className="capitalize w-8 h-8 font-bold mx-2"> {rightSmall} </Button>
+        <Button color="primary" variant="faded" className="capitalize w-8 h-8 font-bold mx-2"> {rightBig} </Button>
       </div>
 
       <div className="flex justify-center">
